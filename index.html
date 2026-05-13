@@ -5,67 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Statistik Harian Kanim Belawan</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Library untuk Ekspor -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
     <style>
-        /* Pengaturan Umum */
-        body { 
-            background-color: #f5f5dc; 
-            padding: 10px; 
-            font-family: 'Segoe UI', sans-serif; 
-        }
-        
-        .header-title { 
-            text-align: center; 
-            font-weight: bold; 
-            font-size: 1.3rem;
-            margin-bottom: 15px; 
-            border-bottom: 2px solid #333333; 
-            padding-bottom: 8px; 
-        }
-
-        .table-container { 
-            background: rgb(255, 255, 255); 
-            padding: 10px; 
-            border-radius: 8px; 
-            box-shadow: 0 2px 8px rgba(158, 192, 202, 0.062); 
-            overflow-x: auto; 
-        }
-
-        /* Mengecilkan Header Tabel */
-        th { 
-            background-color: #c6c4c4 !important; 
-            text-align: center; 
-            font-size: 0.80rem; 
-            white-space: nowrap; 
-            padding: 8px 4px !important;
-        }
-
-        /* KUNCI: Mengecilkan Label Input (Teks Samping) */
-        .input-group-text { 
-            font-size: 10px; /* Sangat kecil agar hemat ruang */
-            min-width: 65px; /* Lebar minimum dikurangi */
-            padding: 1px 4px; 
-            background-color: #f8f9fa; 
-        }
-
-        /* Mengecilkan Angka Input */
-        .form-control-sm { 
-            font-size: 10px; 
-            padding: 1px 4px;
-        }
-
-        /* Mengecilkan Baris Tabel */
-        td { 
-            padding: 4px !important; 
-        }
-
-        /* Mengecilkan Tombol Aksi */
-        .btn-action { 
-            width: 100%; 
-            margin-bottom: 2px; 
-            font-size: 10px; 
-            padding: 1px 0; 
-        }
-
+        body { background-color: #f5f5dc; padding: 10px; font-family: 'Segoe UI', sans-serif; }
+        .header-title { text-align: center; font-weight: bold; font-size: 1.3rem; margin-bottom: 15px; border-bottom: 2px solid #333333; padding-bottom: 8px; }
+        .table-container { background: rgb(255, 255, 255); padding: 10px; border-radius: 8px; box-shadow: 0 2px 8px rgba(158, 192, 202, 0.062); overflow-x: auto; }
+        th { background-color: #c6c4c4 !important; text-align: center; font-size: 0.80rem; white-space: nowrap; padding: 8px 4px !important; }
+        .input-group-text { font-size: 10px; min-width: 65px; padding: 1px 4px; background-color: #f8f9fa; }
+        .form-control-sm { font-size: 10px; padding: 1px 4px; }
+        td { padding: 4px !important; }
+        .btn-action { width: 100%; margin-bottom: 2px; font-size: 10px; padding: 1px 0; }
         .row-data { transition: all 0.3s; }
     </style>
 </head>
@@ -76,6 +30,8 @@
 
     <div class="d-flex justify-content-center align-items-center gap-2 mb-3">
         <button onclick="tambahBaris()" class="btn btn-dark btn-sm shadow-sm">Tambah Baris</button>
+        <button onclick="eksporExcel()" class="btn btn-success btn-sm shadow-sm">Ekspor Excel</button>
+        <button onclick="eksporPDF()" class="btn btn-danger btn-sm shadow-sm">Ekspor PDF</button>
     </div>
 
     <div class="table-container">
@@ -90,12 +46,10 @@
                     <th>Penindakan</th>
                     <th>Publikasi</th>
                     <th>Keuangan</th>
-                    <th>Aksi</th>
+                    <th class="no-ekspor">Aksi</th>
                 </tr>
             </thead>
-            <tbody id="bodyTabel">
-                <!-- Baris akan muncul otomatis melalui JavaScript -->
-            </tbody>
+            <tbody id="bodyTabel"></tbody>
         </table>
     </div>
 </div>
@@ -104,12 +58,10 @@
 <template id="barisTemplate">
     <tr class="row-data">
         <td><input type="date" class="form-control form-control-sm border-0 bg-light" style="font-size: 9px;"></td>
-        <!-- Lalu Lintas -->
         <td>
             <div class="input-group mb-1"><span class="input-group-text">DPRI Baru</span><input type="number" class="form-control form-control-sm"></div>
             <div class="input-group"><span class="input-group-text">DPRI Penggantian</span><input type="number" class="form-control form-control-sm"></div>
         </td>
-        <!-- Izin Tinggal -->
         <td>
             <div class="input-group mb-1"><span class="input-group-text">ITK</span><input type="number" class="form-control form-control-sm"></div>
             <div class="input-group mb-1"><span class="input-group-text">ITAS</span><input type="number" class="form-control form-control-sm"></div>
@@ -117,19 +69,16 @@
             <div class="input-group mb-1"><span class="input-group-text">SKIM</span><input type="number" class="form-control form-control-sm"></div>
             <div class="input-group"><span class="input-group-text">Affidavit</span><input type="number" class="form-control form-control-sm"></div>
         </td>
-        <!-- Perlintasan -->
         <td>
             <div class="input-group mb-1"><span class="input-group-text">Kedatangan</span><input type="number" class="form-control form-control-sm"></div>
             <div class="input-group mb-1"><span class="input-group-text">Keberangkatan</span><input type="number" class="form-control form-control-sm"></div>
             <div class="input-group"><span class="input-group-text">Pesiar</span><input type="number" class="form-control form-control-sm"></div>
         </td>
-        <!-- Intelijen -->
         <td>
             <div class="input-group mb-1"><span class="input-group-text">Pengawasan</span><input type="number" class="form-control form-control-sm"></div>
             <div class="input-group mb-1"><span class="input-group-text">Rapat Tim PORA</span><input type="number" class="form-control form-control-sm"></div>
             <div class="input-group"><span class="input-group-text">Pengawasan Gabungan</span><input type="number" class="form-control form-control-sm"></div>
         </td>
-        <!-- Penindakan -->
         <td>
             <div class="input-group mb-1"><span class="input-group-text">DPRI Hilang</span><input type="number" class="form-control form-control-sm"></div>
             <div class="input-group mb-1"><span class="input-group-text">DPRI Rusak</span><input type="number" class="form-control form-control-sm"></div>
@@ -137,7 +86,6 @@
             <div class="input-group mb-1"><span class="input-group-text">Deteni</span><input type="number" class="form-control form-control-sm"></div>
             <div class="input-group"><span class="input-group-text">Projustitia</span><input type="number" class="form-control form-control-sm"></div>
         </td>
-        <!-- Publikasi -->
         <td>
             <div class="input-group mb-1"><span class="input-group-text">Facebook</span><input type="number" class="form-control form-control-sm"></div>
             <div class="input-group mb-1"><span class="input-group-text">Instagram</span><input type="number" class="form-control form-control-sm"></div>
@@ -146,12 +94,11 @@
             <div class="input-group mb-1"><span class="input-group-text">TikTok</span><input type="number" class="form-control form-control-sm"></div>
             <div class="input-group"><span class="input-group-text">YouTube</span><input type="number" class="form-control form-control-sm"></div>
         </td>
-        <!-- Keuangan -->
         <td>
             <div class="input-group mb-1"><small class="input-group-text">Realisasi Pagu</small><input type="number" class="form-control form-control-sm" placeholder="Rp"></div>
-            <div class="input-group mb-1"><small class="input-group-text">Realisasi PNBP</small><input type="number" class="form-control form-control-sm" placeholder="Rp"></div>        </td>
-        <!-- Aksi -->
-        <td class="text-center" style="min-width: 60px;">
+            <div class="input-group mb-1"><small class="input-group-text">Realisasi PNBP</small><input type="number" class="form-control form-control-sm" placeholder="Rp"></div>
+        </td>
+        <td class="text-center no-ekspor" style="min-width: 60px;">
             <button onclick="simpanBaris(this)" class="btn btn-success btn-action">Simpan</button>
             <button onclick="resetBaris(this)" class="btn btn-warning btn-action">Reset</button>
             <button onclick="hapusBaris(this)" class="btn btn-danger btn-action">Hapus</button>
@@ -168,29 +115,152 @@
     }
 
     function hapusBaris(btn) {
-        if(confirm("Hapus baris ini?")) {
-            btn.closest('tr').remove();
-        }
+        if(confirm("Hapus baris ini?")) btn.closest('tr').remove();
     }
 
     function resetBaris(btn) {
-        const row = btn.closest('tr');
-        row.querySelectorAll('input').forEach(input => input.value = "");
+        btn.closest('tr').querySelectorAll('input').forEach(input => input.value = "");
     }
 
-    function simpanBaris(btn) {
-        const row = btn.closest('tr');
-        const tanggal = row.querySelector('input[type="date"]').value;
-        if(!tanggal) {
-            alert("Isi tanggal!");
-            return;
+    async function simpanBaris(btn) {
+    const row = btn.closest('tr');
+    const inps = row.querySelectorAll('input[type="number"]');
+    const tgl = row.querySelector('input[type="date"]').value;
+
+    if(!tgl) return alert("Silakan isi tanggal terlebih dahulu!");
+
+    btn.innerText = "Mengirim...";
+    btn.disabled = true;
+
+    // Menyusun payload agar data tersusun vertikal di Google Sheets (\n)
+    const payload = {
+        tanggal: tgl,
+        lalin: `DPRI Baru: ${inps[0].value || 0}\nDPRI Pengganantian: ${inps[1].value || 0}`,
+        izting: `ITK: ${inps[2].value || 0}\nITAS: ${inps[3].value || 0}\nITAP: ${inps[4].value || 0}\nSKIM: ${inps[5].value || 0}\nAffidavit: ${inps[6].value || 0}`,
+        lintas: `Kedatangan: ${inps[7].value || 0}\nKeberangkatan: ${inps[8].value || 0}\nPesiar: ${inps[9].value || 0}`,
+        intel: `Pengawasan: ${inps[10].value || 0}\nRapat Tim Pora: ${inps[11].value || 0}\nPengawasan Gabungan: ${inps[12].value || 0}`,
+        nindak: `DPRI Hilang: ${inps[13].value || 0}\nDPRI Rusak: ${inps[14].value || 0}\nDeportasi: ${inps[15].value || 0}\nDeteni: ${inps[16].value || 0}\nProjustitia: ${inps[17].value || 0}`,
+        medsos: `Facebook: ${inps[18].value || 0}\nInstagram: ${inps[19].value || 0}\nX: ${inps[20].value || 0}\nThreads: ${inps[21].value || 0}\nTikTok: ${inps[22].value || 0}\nYouTube: ${inps[23].value || 0}`,
+        keuangan: `Realisasi Pagu ${inps[24].value || 0}\nRealisasi PNBP: ${inps[25].value || 0}`
+    };
+
+    try {
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbwIkUkfOaGbC3NvgTPjHqjsSJ5W1w8LSnwHUF63IIjf5bADzW9pSa2jjLibOTB3PQe7Sw/exec';
+        
+        await fetch(scriptURL, {
+            method: 'POST',
+            mode: 'no-cors', // Penting untuk menghindari error CORS di Google Script
+            body: JSON.stringify(payload)
+        });
+
+        alert("Data berhasil masuk ke Database Google Sheets!");
+        btn.innerText = "Tersimpan ✅";
+        btn.classList.replace('btn-success', 'btn-secondary');
+    } catch (error) {
+        console.error('Error!', error.message);
+        alert("Gagal menyimpan ke database.");
+        btn.innerText = "Simpan";
+        btn.disabled = false;
+    }
+}
+
+    // FUNGSI EKSPOR EXCEL
+   function eksporExcel() {
+    const rows = [];
+    // Header Tabel sesuai kategori di web
+    rows.push(["Tanggal", "Lalu Lintas", "Izin Tinggal", "Perlintasan", "Intelijen", "Penindakan", "Publikasi", "Keuangan"]);
+
+    document.querySelectorAll("#bodyTabel tr").forEach(tr => {
+        const inps = tr.querySelectorAll('input[type="number"]');
+        const tanggal = tr.querySelector('input[type="date"]').value;
+        
+        rows.push([
+            tanggal,
+            `DPRI Baru: ${inps[0].value || 0}\nDPRI Penggantian: ${inps[1].value || 0}`,
+            `ITK: ${inps[2].value || 0}\nITAS: ${inps[3].value || 0}\nITAP: ${inps[4].value || 0}\nSKIM: ${inps[5].value || 0}\nAffidavit: ${inps[6].value || 0}`,
+            `Kedatangan: ${inps[7].value || 0}\nKeberangkatan: ${inps[8].value || 0}\nPesiar: ${inps[9].value || 0}`,
+            `Pengawasan: ${inps[10].value || 0}\nRapat Tim Pora: ${inps[11].value || 0}\nPengawasan Gabungan: ${inps[12].value || 0}`,
+            `DPRI Hilang: ${inps[13].value || 0}\nRsk: ${inps[14].value || 0}\nDeportasi: ${inps[15].value || 0}\nDeteni: ${inps[16].value || 0}\nProjustitia: ${inps[17].value || 0}`,
+            `Facebook: ${inps[18].value || 0}\nInstagram: ${inps[19].value || 0}\nX: ${inps[20].value || 0}\nThreads: ${inps[21].value || 0}\nTikTok: ${inps[22].value || 0}\nYouTube: ${inps[23].value || 0}`,
+            `Realisasi Pagu: ${inps[24].value || 0}\nRealisasi PNBP: ${inps[25].value || 0}`
+        ]);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    for (let R = range.s.r; R <= range.e.r; ++R) {
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+            const cell_address = { c: C, r: R };
+            const cell_ref = XLSX.utils.encode_cell(cell_address);
+            if (!ws[cell_ref]) continue;
+            
+            // Menambahkan style wrapText agar \n terbaca oleh Excel/WPS
+            ws[cell_ref].s = {
+                alignment: { 
+                    wrapText: true, 
+                    vertical: 'top' 
+                }
+            };
         }
-        btn.innerText = "OK ✅";
-        setTimeout(() => btn.innerText = "Simpan", 1500);
+    }
+
+    // Mengatur lebar kolom agar teks tidak terlalu berdempetan
+    ws['!cols'] = [
+        { wch: 12 }, { wch: 25 }, { wch: 20 }, { wch: 15 }, 
+        { wch: 18 }, { wch: 15 }, { wch: 15 }, { wch: 20 }
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Statistik");
+    XLSX.writeFile(wb, "Statistik_Kanim_Belawan.xlsx");
+}
+
+    // FUNGSI EKSPOR PDF
+    function eksporPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('landscape', 'mm', 'a4');
+
+        doc.setFontSize(14);
+        doc.text("LAPORAN STATISTIK HARIAN KANIM BELAWAN", 14, 15);
+        
+        const data = [];
+        document.querySelectorAll("#bodyTabel tr").forEach(tr => {
+            const tanggal = tr.querySelector('input[type="date"]').value;
+            const inps = tr.querySelectorAll('input[type="number"]');
+            
+            data.push([
+                tanggal,
+                `DPRI Baru: ${inps[0].value || 0}\nDPRI Penggantian: ${inps[1].value || 0}`,
+                `ITK: ${inps[2].value || 0}\nITAS: ${inps[3].value || 0}\nITAP: ${inps[4].value || 0}\nSKIM: ${inps[5].value || 0}\nAffidavit: ${inps[6].value || 0}`,
+                `Kedatangan: ${inps[7].value || 0}\nKeberangkatan: ${inps[8].value || 0}\nPesiar: ${inps[9].value || 0}`,
+                `Pengawasan: ${inps[10].value || 0}\nRapat Tim Pora: ${inps[11].value || 0}\nPengawasan Gabungan: ${inps[12].value || 0}`,
+                `DPRI Hilang: ${inps[13].value || 0}\nDPRI Rusak: ${inps[14].value || 0}\nDeportasi: ${inps[15].value || 0}\nDeteni: ${inps[16].value || 0}\nProjustitia: ${inps[17].value || 0}`,
+                `Facebook: ${inps[18].value || 0}\nInstagram: ${inps[19].value || 0}\nX: ${inps[20].value || 0}\nThreads: ${inps[21].value || 0}\nTikTok: ${inps[22].value || 0}\nYouTube: ${inps[23].value || 0}`,
+                `Realisasi Pagu:\n${inps[24].value || 0}\nRealisasi PNBP:\n${inps[25].value || 0}`
+            ]);
+        });
+
+        doc.autoTable({
+            head: [["Tanggal", "Lalu Lintas", "Izin Tinggal", "Perlintasan", "Intelijen", "Penindakan", "Publikasi", "Keuangan"]],
+            body: data,
+            startY: 22,
+            theme: 'grid',
+            styles: { 
+                fontSize: 7, 
+                cellPadding: 2,
+                overflow: 'linebreak',
+                valign: 'middle'
+            },
+            headStyles: { fillColor: [44, 62, 80], halign: 'center' },
+            columnStyles: {
+                0: { cellWidth: 25 },
+                6: { cellWidth: 35 }
+            }
+        });
+
+        doc.save("Statistik_Kanim_Belawan.pdf");
     }
 
     window.onload = tambahBaris;
 </script>
-
-</body>
-</html>
